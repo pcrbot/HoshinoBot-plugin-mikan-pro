@@ -1,0 +1,17 @@
+{
+    // 密码相关，请勿修改
+    "web_salt": "",
+    "web_password": "",
+
+    // mikan 订阅地址
+    "mikan_url": "",
+    // mikan 订阅过滤规则
+    "filter": [],
+
+    // 下载目录
+    "download_path": "/tmp/mikanpro",
+    // 将下载完成的资源移动至展示目录的命令，可以使用mv、ln、rclone等
+    "move_file_cmd": "mv '{src}' /wwwroot/bungumi",
+    // 公开地址（可以是 Nginx、Oneindex 等）
+    "public_url": "https://your-own-domain-here.com/",
+}
