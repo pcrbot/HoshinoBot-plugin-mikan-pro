@@ -25,7 +25,7 @@ class MikanConfig(dict):
         """读取配置文件"""
         if not os.path.exists(cls.config_filepath):
             shutil.copy(
-                os.path.join(os.path.dirname(__file__), "default_config.json"),
+                os.path.join(os.path.dirname(__file__), "default_config.json5"),
                 cls.config_filepath,
             )
         async with aiofiles.open(cls.config_filepath, "r") as f:
@@ -47,10 +47,10 @@ class Episode(pw.Model):
     pub_time = pw.TimeField()  # 发布时间
     torrent_url = pw.CharField()  # 种子下载地址，种子由mikan提供。此项也可以用磁力链
 
-    # aria2 任务号，注意：在磁力任务、种子任务中会变化
+    # aria2 任务号，注意：在磁力任务、种子任务中，任务号会变化
     aria2_gid = pw.CharField(max_length=16, index=True, null=True)
 
-    # 0：未开始，1：忽略，2：正在下载，3：下载失败，4：下载完毕，5：正在上传，6：上传失败，7：上传完毕
+    # 0：未开始，1：忽略，2：正在下载，3：下载失败，4：下载完毕
     download_status = pw.IntegerField(index=True)
 
     class Meta:
@@ -71,14 +71,14 @@ class Mikan:
         # aria2可执行文件路径
         running_os = platform.system()
         if running_os == "Windows":
-            aria2c_exe = "aria2c.exe"
+            self.aria2c_exe = os.path.join(
+                os.path.dirname(__file__), "libs", "aria2-1.35.0-win-64bit-build1", "aria2c.exe")
         elif running_os == "Linux":
-            aria2c_exe = "aria2c"
+            self.aria2c_exe = os.path.join(
+                os.path.dirname(__file__), "libs", "aria2-1.35.0-linux-gnu-64bit-build1", "aria2c")
         else:
             raise FileNotFoundError(
                 f"current os {running_os} is not capable for aria2")
-        self.aria2c_exe = os.path.join(
-            os.path.dirname(__file__), "libs", aria2c_exe)
         if not os.path.exists(self.aria2c_exe):
             # 如果不存在则自动下载aria2
             set_up_aria2(running_os)
@@ -186,18 +186,19 @@ class Mikan:
                 ep.download_status = 4  # 下载完成
                 ep.save()
                 self.pending_task.remove(ep)
-                loop.create_task(self.display_files(result['files']))
+                loop.create_task(self.display_files(ep, result['files']))
                 continue
             if status == "removed":
                 continue
 
-    async def display_files(self, files: List[str]):
+    async def display_files(self, ep: Episode, files: List[str]):
         """执行下载完毕后的转移任务"""
         src = os.path.commonpath(files)
         shell = await asyncio.create_subprocess_shell(
             self.config['move_file_cmd'].format(src=src)
         )
         await shell.communicate()
+        await sv.broadcast(f"番剧更新：{ep.title}\n下载链接：{self.config['public_url']}{os.path.basename(src)}")
 
 
 mikan = Mikan()

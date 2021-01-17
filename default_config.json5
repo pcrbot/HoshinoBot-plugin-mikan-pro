@@ -10,8 +10,13 @@
 
     // 下载目录
     "download_path": "/tmp/mikanpro",
+
     // 将下载完成的资源移动至展示目录的命令，可以使用mv、ln、rclone等
+    // 例 1：将下载完成的资源移动至 Nginx 索引的目录 "mv '{src}' /wwwroot/bungumi"
+    // 例 2：将下载完成的资源利用 ossutil 上传至阿里云 OSS "ossutil cp {src} oss://cnhk/bungumi"
+    // 例 3：将下载完成的资源利用 rclone 上传至 onedrive "rclone move {src} onedrive:/bungumi"
     "move_file_cmd": "mv '{src}' /wwwroot/bungumi",
+
     // 公开地址（可以是 Nginx、Oneindex 等）
     "public_url": "https://your-own-domain-here.com/",
 }

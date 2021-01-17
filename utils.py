@@ -24,28 +24,44 @@ def get_free_tcp_port() -> int:
 
 
 def set_up_aria2(running_os):
-    raise RuntimeError("aria2 未安装，请参照说明安装 aria2")
+    aria2c_path = os.path.join(os.path.dirname(__file__), "libs")
+    os.makedirs(aria2c_path)
 
-    # aria2c_path = os.path.join(os.path.dirname(__file__), "libs")
-    # os.makedirs(aria2c_path)
-    # if running_os == "windows":
-    #     resp = requests.get(
-    #         "https://github.com/aria2/aria2/releases/download/release-1.35.0/aria2-1.35.0-win-64bit-build1.zip")
-    #     if resp.status_code != 200:
-    #         raise IOError('cannot download aria2')
-    #     content = io.BytesIO(resp.content)
-    #     archive = zipfile.ZipFile(content)
-    #     archive.extractall(path=aria2c_path)
-    #     return
-    # if running_os == "Linux":
-    #     resp = requests.get(
-    #         "https://github.com/aria2/aria2/releases/download/release-1.35.0/aria2-1.35.0.tar.gz")
-    #     if resp.status_code != 200:
-    #         raise IOError('cannot download aria2')
-    #     content = io.BytesIO(resp.content)
-    #     archive = tarfile.open(fileobj=content)
-    #     archive.extractall(path=aria2c_path)
-    #     return
+    # 创建aria2配置文件
+    with open(os.path.join(os.path.dirname(__file__), "template_aria2.conf"), 'r') as f:
+        template = f.read()
+    # 获取 trackers
+    resp = requests.get("https://cdn.jsdelivr.net/gh/ngosang/trackerslist/trackers_all.txt")
+    if resp.status_code != 200:
+        raise IOError('cannot download trackers')
+    trackers = resp.text.split()
+    # 套用模板
+    config = template.format(
+        trackers=','.join(trackers),
+        path=os.path.normpath(aria2c_path),
+    )
+    with open(os.path.join(aria2c_path, 'aria2.conf'), 'w') as f:
+        f.write(config)
+
+    # 下载 aria2
+    if running_os == "Windows":
+        resp = requests.get(
+            "https://github.com/aria2/aria2/releases/download/release-1.35.0/aria2-1.35.0-win-64bit-build1.zip")
+        if resp.status_code != 200:
+            raise IOError('cannot download aria2')
+        content = io.BytesIO(resp.content)
+        archive = zipfile.ZipFile(content)
+        archive.extractall(path=aria2c_path)
+        return
+    if running_os == "Linux":
+        resp = requests.get(
+            "https://github.com/q3aql/aria2-static-builds/releases/download/v1.35.0/aria2-1.35.0-linux-gnu-64bit-build1.tar.bz2")
+        if resp.status_code != 200:
+            raise IOError('cannot download aria2')
+        content = io.BytesIO(resp.content)
+        archive = tarfile.open(fileobj=content)
+        archive.extractall(path=aria2c_path)
+        return
 
 
 class Aria2Client:
